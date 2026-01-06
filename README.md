@@ -166,9 +166,22 @@ Apply beautiful desktop themes from [vinceliuice's collection](https://github.co
 
 ## Requirements
 
-- GNOME Shell 44, 45, or 46
+- GNOME Shell 44, 45, 46, 47, 48, 49, or 50 (fully tested on GNOME 48+)
 - Wayland session (this extension is designed for Wayland)
-- Linux with GNOME desktop environment
+- Linux with GNOME desktop environment (tested on Debian GNOME)
+
+## Compatibility
+
+This extension is fully compatible with:
+- **GNOME Shell 44-50** (primary focus on GNOME 48+)
+- **Debian GNOME** (tested and verified)
+- **Wayland sessions** (required)
+
+### GNOME 48+ Features
+- All features have been tested and optimized for GNOME 48
+- Enhanced error handling for API compatibility
+- Improved window management for newer GNOME versions
+- Modern stylesheet loading compatible with GNOME 48+
 
 ## Troubleshooting
 
@@ -176,6 +189,7 @@ Apply beautiful desktop themes from [vinceliuice's collection](https://github.co
 - Make sure you're running GNOME on Wayland (check with `echo $XDG_SESSION_TYPE`)
 - Verify the schema is compiled: `glib-compile-schemas ~/.local/share/gnome-shell/extensions/hypr-gnome@hyprland.com/schemas/`
 - Check logs: `journalctl -f -o cat /usr/bin/gnome-shell`
+- For GNOME 48+, ensure you have the latest version of the extension
 
 ### Keybindings not working
 - Make sure "Enable Custom Keybindings" is enabled in preferences

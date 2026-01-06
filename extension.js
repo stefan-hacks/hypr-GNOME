@@ -26,8 +26,13 @@ export default class HyprGNOMEExtension extends Extension {
     }
 
     enable() {
-        settings = this.getSettings();
-        this._connectSettings();
+        try {
+            settings = this.getSettings();
+            if (!settings) {
+                log('hypr-GNOME: Failed to get settings - extension disabled');
+                return;
+            }
+            this._connectSettings();
         
         // Initialize managers based on user preferences
         if (settings.get_boolean('enable-tiling')) {
@@ -68,11 +73,18 @@ export default class HyprGNOMEExtension extends Extension {
             this._gtkThemeManager = new GTKThemeManager(settings);
         }
         
-        // Monitor window changes
-        this._windowTracker = Meta.WindowTracker.get_default();
+        // Monitor window changes - GNOME 48+ compatible
+        try {
+            this._windowTracker = Meta.WindowTracker.get_default();
+        } catch (e) {
+            log(`hypr-GNOME: Could not get window tracker: ${e}`);
+        }
         this._connectSignals();
         
         log('hypr-GNOME: Extension enabled');
+        } catch (e) {
+            log(`hypr-GNOME: Error enabling extension: ${e}`);
+        }
     }
 
     disable() {
@@ -345,9 +357,25 @@ class TilingManager {
         if (windows.length === 0) return;
         
         const gap = this._settings.get_int('tiling-gaps');
-        const monitor = workspace.index() >= 0 ? 
-            Main.layoutManager.monitors[workspace.index() % Main.layoutManager.monitors.length] :
-            Main.layoutManager.primaryMonitor;
+        
+        // GNOME 48+ compatible monitor access
+        let monitor;
+        try {
+            const workspaceIndex = workspace.index();
+            const monitors = Main.layoutManager.monitors;
+            if (monitors && monitors.length > 0 && workspaceIndex >= 0) {
+                monitor = monitors[workspaceIndex % monitors.length];
+            } else {
+                monitor = Main.layoutManager.primaryMonitor || monitors[0];
+            }
+        } catch (e) {
+            monitor = Main.layoutManager.primaryMonitor || Main.layoutManager.monitors[0];
+        }
+        
+        if (!monitor) {
+            log('hypr-GNOME: No monitor found for tiling');
+            return;
+        }
         
         const workArea = monitor.work_area;
         const totalGaps = gap * (windows.length + 1);
@@ -357,14 +385,19 @@ class TilingManager {
         if (this._layoutMode === 'monocle') {
             // Monocle layout - fullscreen with gaps
             windows.forEach(window => {
-                window.move_frame(false, workArea.x + gap, workArea.y + gap);
-                window.move_resize_frame(
-                    false,
-                    workArea.x + gap,
-                    workArea.y + gap,
-                    availableWidth,
-                    availableHeight
-                );
+                try {
+                    // GNOME 48+ compatible window positioning
+                    window.move_frame(false, workArea.x + gap, workArea.y + gap);
+                    window.move_resize_frame(
+                        false,
+                        workArea.x + gap,
+                        workArea.y + gap,
+                        availableWidth,
+                        availableHeight
+                    );
+                } catch (e) {
+                    log(`hypr-GNOME: Error moving window: ${e}`);
+                }
             });
         } else if (this._layoutMode === 'grid') {
             // Grid layout
@@ -379,8 +412,13 @@ class TilingManager {
                 const x = workArea.x + gap + (col * (cellWidth + gap));
                 const y = workArea.y + gap + (row * (cellHeight + gap));
                 
-                window.move_frame(false, x, y);
-                window.move_resize_frame(false, x, y, cellWidth, cellHeight);
+                try {
+                    // GNOME 48+ compatible window positioning
+                    window.move_frame(false, x, y);
+                    window.move_resize_frame(false, x, y, cellWidth, cellHeight);
+                } catch (e) {
+                    log(`hypr-GNOME: Error moving window: ${e}`);
+                }
             });
         } else {
             // Master-stack layout (default)
@@ -399,8 +437,13 @@ class TilingManager {
                 for (let i = 0; i < masterCount; i++) {
                     const window = windows[i];
                     const y = workArea.y + gap + (i * (masterHeight + gap));
-                    window.move_frame(false, workArea.x + gap, y);
-                    window.move_resize_frame(false, workArea.x + gap, y, masterWidth, masterHeight);
+                    try {
+                        // GNOME 48+ compatible window positioning
+                        window.move_frame(false, workArea.x + gap, y);
+                        window.move_resize_frame(false, workArea.x + gap, y, masterWidth, masterHeight);
+                    } catch (e) {
+                        log(`hypr-GNOME: Error moving window: ${e}`);
+                    }
                 }
             }
             
@@ -414,8 +457,13 @@ class TilingManager {
                 for (let i = 0; i < stackCount; i++) {
                     const window = windows[masterCount + i];
                     const y = workArea.y + gap + (i * (stackHeight + gap));
-                    window.move_frame(false, stackX, y);
-                    window.move_resize_frame(false, stackX, y, stackWidth, stackHeight);
+                    try {
+                        // GNOME 48+ compatible window positioning
+                        window.move_frame(false, stackX, y);
+                        window.move_resize_frame(false, stackX, y, stackWidth, stackHeight);
+                    } catch (e) {
+                        log(`hypr-GNOME: Error moving window: ${e}`);
+                    }
                 }
             }
         }
@@ -458,8 +506,21 @@ class TilingManager {
             nextIndex = (currentIndex - 1 + windows.length) % windows.length;
         }
         
-        windows[nextIndex].raise();
-        Main.activateWindow(windows[nextIndex], global.get_current_time());
+        try {
+            windows[nextIndex].raise();
+            // GNOME 48+ compatible window activation
+            if (typeof Main.activateWindow === 'function') {
+                Main.activateWindow(windows[nextIndex], global.get_current_time());
+            } else {
+                // Fallback for newer GNOME versions
+                const windowActor = windows[nextIndex].get_compositor_private();
+                if (windowActor) {
+                    global.stage.set_key_focus(windowActor);
+                }
+            }
+        } catch (e) {
+            log(`hypr-GNOME: Error focusing window: ${e}`);
+        }
     }
 
     _toggleTiling() {
@@ -474,9 +535,13 @@ class TilingManager {
         const window = global.display.get_focus_window();
         if (!window) return;
         
-        // Toggle floating state
-        window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
-        this._retileAll();
+        try {
+            // Toggle floating state - GNOME 48+ compatible
+            window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
+            this._retileAll();
+        } catch (e) {
+            log(`hypr-GNOME: Error toggling float: ${e}`);
+        }
     }
 
     destroy() {
@@ -521,47 +586,62 @@ class AnimationManager {
     _animateWindowIn(window) {
         if (!this._settings.get_boolean('animation-window-open')) return;
         
-        const actor = window.get_compositor_private();
-        if (!actor) return;
-        
-        const duration = this._settings.get_int('animation-duration');
-        const curve = this._settings.get_string('animation-curve');
-        
-        actor.opacity = 0;
-        actor.scale_x = 0.9;
-        actor.scale_y = 0.9;
-        
-        actor.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: duration,
-            mode: this._getEasingMode(curve)
-        });
+        try {
+            const actor = window.get_compositor_private();
+            if (!actor) return;
+            
+            const duration = this._settings.get_int('animation-duration');
+            const curve = this._settings.get_string('animation-curve');
+            
+            // GNOME 48+ compatible animation
+            actor.opacity = 0;
+            actor.scale_x = 0.9;
+            actor.scale_y = 0.9;
+            
+            // Use easing with proper error handling
+            if (typeof actor.ease === 'function') {
+                actor.ease({
+                    opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: duration,
+                    mode: this._getEasingMode(curve)
+                });
+            }
+        } catch (e) {
+            log(`hypr-GNOME: Error animating window: ${e}`);
+        }
     }
 
     _animateAttention(window) {
         if (!this._settings.get_boolean('animation-attention')) return;
         
-        const actor = window.get_compositor_private();
-        if (!actor) return;
-        
-        const duration = this._settings.get_int('animation-duration');
-        
-        actor.ease({
-            scale_x: 1.05,
-            scale_y: 1.05,
-            duration: duration / 2,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            onComplete: () => {
-                actor.ease({
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    duration: duration / 2,
-                    mode: Clutter.AnimationMode.EASE_IN_QUAD
-                });
-            }
-        });
+        try {
+            const actor = window.get_compositor_private();
+            if (!actor || typeof actor.ease !== 'function') return;
+            
+            const duration = this._settings.get_int('animation-duration');
+            
+            // GNOME 48+ compatible attention animation
+            actor.ease({
+                scale_x: 1.05,
+                scale_y: 1.05,
+                duration: duration / 2,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    if (typeof actor.ease === 'function') {
+                        actor.ease({
+                            scale_x: 1.0,
+                            scale_y: 1.0,
+                            duration: duration / 2,
+                            mode: Clutter.AnimationMode.EASE_IN_QUAD
+                        });
+                    }
+                }
+            });
+        } catch (e) {
+            log(`hypr-GNOME: Error animating attention: ${e}`);
+        }
     }
 
     _getEasingMode(curve) {
@@ -672,16 +752,26 @@ class WindowRules {
     }
 
     _applyRule(window, action) {
-        switch (action) {
-            case 'float':
-                window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
-                break;
-            case 'tile':
-                // Force tiling
-                break;
-            case 'fullscreen':
-                window.make_fullscreen();
-                break;
+        try {
+            switch (action) {
+                case 'float':
+                    // GNOME 48+ compatible unmaximize
+                    if (window.is_maximized) {
+                        window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
+                    }
+                    break;
+                case 'tile':
+                    // Force tiling - handled by tiling manager
+                    break;
+                case 'fullscreen':
+                    // GNOME 48+ compatible fullscreen
+                    if (typeof window.make_fullscreen === 'function') {
+                        window.make_fullscreen();
+                    }
+                    break;
+            }
+        } catch (e) {
+            log(`hypr-GNOME: Error applying window rule: ${e}`);
         }
     }
 
@@ -712,8 +802,33 @@ class ThemingManager {
             const stylesheetFile = Gio.File.new_for_path(`${this._extensionPath}/stylesheet.css`);
             if (stylesheetFile.query_exists(null)) {
                 const [, contents] = stylesheetFile.load_contents(null);
-                // Convert Uint8Array to string
-                this._stylesheet = String.fromCharCode.apply(null, contents);
+                // Convert Uint8Array to string - GNOME 48+ compatible
+                if (contents instanceof Uint8Array) {
+                    try {
+                        if (typeof TextDecoder !== 'undefined') {
+                            this._stylesheet = new TextDecoder('utf-8').decode(contents);
+                        } else {
+                            // Fallback for older versions
+                            this._stylesheet = String.fromCharCode.apply(null, Array.from(contents));
+                        }
+                    } catch (e) {
+                        // Ultimate fallback
+                        this._stylesheet = String.fromCharCode.apply(null, Array.from(contents));
+                    }
+                } else if (typeof contents === 'string') {
+                    this._stylesheet = contents;
+                } else if (contents instanceof GLib.Bytes) {
+                    // Handle GLib.Bytes
+                    const data = contents.get_data();
+                    if (data) {
+                        this._stylesheet = String.fromCharCode.apply(null, Array.from(data));
+                    } else {
+                        this._stylesheet = '';
+                    }
+                } else {
+                    // Fallback for older versions
+                    this._stylesheet = String.fromCharCode.apply(null, Array.from(contents));
+                }
             } else {
                 this._stylesheet = '';
             }
@@ -729,16 +844,41 @@ class ThemingManager {
         // Combine base stylesheet with dynamic styles
         const fullStylesheet = (this._stylesheet || '') + '\n' + (this._dynamicStyles || '');
         
-        // Apply styles via Main.loadThemeFromString or by injecting into theme
+        if (!fullStylesheet || !fullStylesheet.trim()) {
+            return;
+        }
+        
+        // Apply styles - GNOME 48+ compatible method
         try {
             const themeContext = St.ThemeContext.get_for_stage(global.stage);
-            if (themeContext && fullStylesheet) {
+            if (themeContext) {
                 // Write to a temp file and load it
-                const tempDir = Gio.File.new_for_path(GLib.get_user_cache_dir());
+                const cacheDir = GLib.get_user_cache_dir();
+                const tempDir = Gio.File.new_for_path(cacheDir);
                 const tempFile = tempDir.get_child('hypr-gnome-theme.css');
                 
+                // Ensure directory exists
+                if (!tempDir.query_exists(null)) {
+                    tempDir.make_directory_with_parents(null);
+                }
+                
+                // Write stylesheet - GNOME 48+ compatible encoding
+                let contents;
+                try {
+                    if (typeof TextEncoder !== 'undefined') {
+                        const encoder = new TextEncoder();
+                        contents = encoder.encode(fullStylesheet);
+                    } else {
+                        // Fallback for older versions
+                        contents = GLib.Bytes.new(Array.from(fullStylesheet).map(c => c.charCodeAt(0)));
+                    }
+                } catch (e) {
+                    log(`hypr-GNOME: Error encoding stylesheet: ${e}`);
+                    contents = fullStylesheet;
+                }
+                
                 const [success] = tempFile.replace_contents(
-                    fullStylesheet,
+                    contents,
                     null,
                     false,
                     Gio.FileCreateFlags.REPLACE_DESTINATION,
@@ -746,19 +886,17 @@ class ThemingManager {
                 );
                 
                 if (success) {
-                    // Try to load via theme system
+                    // Load stylesheet via theme system
                     const theme = themeContext.get_theme();
-                    if (theme && theme.load_stylesheet) {
-                        theme.load_stylesheet(tempFile);
+                    if (theme && typeof theme.load_stylesheet === 'function') {
+                        theme.load_stylesheet(tempFile.get_uri());
+                    } else if (theme && typeof theme.load_stylesheet_from_file === 'function') {
+                        theme.load_stylesheet_from_file(tempFile);
                     }
                 }
             }
         } catch (e) {
             log(`hypr-GNOME: Error applying styles: ${e}`);
-            // Fallback: inject CSS directly via global stylesheet
-            if (fullStylesheet) {
-                Main.loadThemeFromString(fullStylesheet);
-            }
         }
     }
 
