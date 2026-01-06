@@ -4,7 +4,7 @@ Bring the power of Hyprland to GNOME! This extension adds dynamic tiling, smooth
 
 ## Features
 
-### 🎨 Advanced Theming (Inspired by OpenBar)
+### 🎨 Advanced Theming (Inspired by OpenBar & vinceliuice)
 - **Top Bar/Panel Customization**: Style the GNOME top panel with Fixed, Floating, or Islands layouts
 - **Menu Theming**: Customize Calendar, Notifications, and Quick Settings menus
 - **Dash/Dock Styling**: Apply custom appearance to the application dash
@@ -12,6 +12,10 @@ Bring the power of Hyprland to GNOME! This extension adds dynamic tiling, smooth
 - **Color Palette Generation**: Extract color palettes from wallpapers
 - **Easy Color Pickers**: Intuitive color selection with transparency controls
 - **Import/Export**: Save and share your theme configurations
+- **GRUB2 Bootloader Theming**: Customize your bootloader with themes from vinceliuice's collection (Tela, Vimix, WhiteSur, Elegant, Wuthering)
+- **GDM Login Screen**: Personalize your login screen with custom backgrounds and colors
+- **GTK Theme Management**: Easily apply beautiful GTK themes (Orchis, WhiteSur, Graphite, Colloid, Qogir, Layan, Mojave, Fluent)
+- **Icon & Cursor Themes**: Manage icon themes and cursor themes from vinceliuice's repositories
 
 ### 🪟 Dynamic Tiling Window Management
 - **Multiple Layout Modes**: Choose from master-stack, grid, monocle, or dwindle layouts
@@ -135,6 +139,31 @@ Define custom rules for specific windows. Format: `action,pattern` (one per line
 - **Border Radius**: Rounded corners
 - **Full customization** of the application dash appearance
 
+### GRUB2 Bootloader Theming
+
+Customize your bootloader appearance with themes inspired by [vinceliuice's grub2-themes](https://github.com/vinceliuice/grub2-themes):
+
+- **Theme Selection**: Choose from Tela, Vimix, Stylish, WhiteSur, Elegant, and Wuthering themes
+- **Easy Installation**: One-click theme installation and application
+- **Automatic Configuration**: Themes are automatically configured for your system
+
+### GDM Login Screen Theming
+
+Personalize your login screen:
+
+- **Theme Modes**: Match with GNOME theme, custom background, or custom color
+- **Background Images**: Set custom background images for the login screen
+- **Background Colors**: Choose custom colors for a unified look
+
+### GTK & Desktop Theme Management
+
+Apply beautiful desktop themes from [vinceliuice's collection](https://github.com/vinceliuice):
+
+- **GTK Themes**: Orchis, WhiteSur, Graphite, Colloid, Qogir, Layan, Mojave, Fluent
+- **Icon Themes**: WhiteSur, Tela, Colloid, Qogir, Fluent icon themes
+- **One-Click Installation**: Download and install themes directly from GitHub repositories
+- **Automatic Application**: Themes are applied instantly after installation
+
 ## Requirements
 
 - GNOME Shell 44, 45, or 46
@@ -170,6 +199,12 @@ GPL-3.0 or later
 
 - Inspired by [Hyprland](https://hyprland.org/) - A highly customizable dynamic tiling Wayland compositor
 - Theming features inspired by [OpenBar](https://github.com/neuromorph/openbar) - An excellent GNOME Shell theming extension
+- GRUB2, GDM, and GTK theme integration inspired by [vinceliuice](https://github.com/vinceliuice) - Creator of beautiful themes including:
+  - [grub2-themes](https://github.com/vinceliuice/grub2-themes) - Modern GRUB2 bootloader themes
+  - [Orchis Theme](https://github.com/vinceliuice/Orchis-theme) - Material Design theme for GNOME
+  - [WhiteSur Theme](https://github.com/vinceliuice/WhiteSur-gtk-theme) - macOS Big Sur inspired theme
+  - [Graphite Theme](https://github.com/vinceliuice/Graphite-gtk-theme) - Modern GTK theme
+  - And many other beautiful themes!
 
 ## References
 

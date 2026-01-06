@@ -360,8 +360,278 @@ export default class HyprGNOMEPreferences extends ExtensionPreferences {
         // Import/Export Page
         this._addImportExportPage(window, settings);
         
+        // System Theme Pages (GRUB2, GDM, GTK)
+        this._addSystemThemePages(window, settings);
+        
         window.add(page);
         window.add(keybindingsPage);
+    }
+    
+    _addSystemThemePages(window, settings) {
+        // GRUB2 Theme Page
+        const grub2Page = new Adw.PreferencesPage({
+            title: _('GRUB2 Bootloader'),
+            icon_name: 'media-playback-start-symbolic'
+        });
+        
+        const grub2Group = new Adw.PreferencesGroup({
+            title: _('GRUB2 Theme Management'),
+            description: _('Customize your bootloader appearance with themes from vinceliuice')
+        });
+        
+        // Enable GRUB2 theming
+        const grub2EnableRow = new Adw.ActionRow({
+            title: _('Enable GRUB2 Theming'),
+            subtitle: _('Apply custom themes to the bootloader')
+        });
+        
+        const grub2EnableSwitch = new Gtk.Switch({
+            active: settings.get_boolean('enable-grub2-theming'),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('enable-grub2-theming', grub2EnableSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        grub2EnableRow.add_suffix(grub2EnableSwitch);
+        grub2EnableRow.activatable_widget = grub2EnableSwitch;
+        grub2Group.add(grub2EnableRow);
+        
+        // GRUB2 theme selection
+        const grub2ThemeRow = new Adw.ComboRow({
+            title: _('GRUB2 Theme'),
+            subtitle: _('Select a bootloader theme'),
+            model: Gtk.StringList.new([
+                'None', 'Tela', 'Vimix', 'Stylish', 'WhiteSur', 
+                'Elegant-Forest', 'Elegant-Mojave', 'Wuthering-Changli'
+            ])
+        });
+        const grub2Themes = ['none', 'tela', 'vimix', 'stylish', 'whitesur', 
+                            'elegant-forest', 'elegant-mojave', 'wuthering-changli'];
+        const currentGrub2Theme = settings.get_string('grub2-theme-name');
+        const grub2ThemeIndex = grub2Themes.indexOf(currentGrub2Theme);
+        if (grub2ThemeIndex >= 0) {
+            grub2ThemeRow.set_selected(grub2ThemeIndex + 1); // +1 for "None"
+        }
+        grub2ThemeRow.connect('notify::selected', (row) => {
+            if (row.selected > 0) {
+                settings.set_string('grub2-theme-name', grub2Themes[row.selected - 1]);
+            } else {
+                settings.set_string('grub2-theme-name', 'none');
+            }
+        });
+        grub2Group.add(grub2ThemeRow);
+        
+        // Apply GRUB2 theme button
+        const applyGrub2Row = new Adw.ActionRow({
+            title: _('Apply Theme'),
+            subtitle: _('Install and apply the selected GRUB2 theme')
+        });
+        
+        const applyGrub2Button = new Gtk.Button({
+            label: _('Apply'),
+            valign: Gtk.Align.CENTER
+        });
+        applyGrub2Button.connect('clicked', () => {
+            // Trigger theme application
+            settings.set_boolean('grub2-apply-trigger', !settings.get_boolean('grub2-apply-trigger'));
+        });
+        applyGrub2Row.add_suffix(applyGrub2Button);
+        grub2Group.add(applyGrub2Row);
+        
+        grub2Page.add(grub2Group);
+        window.add(grub2Page);
+        
+        // GDM Theme Page
+        const gdmPage = new Adw.PreferencesPage({
+            title: _('GDM Login Screen'),
+            icon_name: 'system-users-symbolic'
+        });
+        
+        const gdmGroup = new Adw.PreferencesGroup({
+            title: _('GDM Theme Management'),
+            description: _('Customize the login screen appearance')
+        });
+        
+        // Enable GDM theming
+        const gdmEnableRow = new Adw.ActionRow({
+            title: _('Enable GDM Theming'),
+            subtitle: _('Apply custom themes to the login screen')
+        });
+        
+        const gdmEnableSwitch = new Gtk.Switch({
+            active: settings.get_boolean('enable-gdm-theming'),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('enable-gdm-theming', gdmEnableSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        gdmEnableRow.add_suffix(gdmEnableSwitch);
+        gdmEnableRow.activatable_widget = gdmEnableSwitch;
+        gdmGroup.add(gdmEnableRow);
+        
+        // GDM theme mode
+        const gdmModeRow = new Adw.ComboRow({
+            title: _('Theme Mode'),
+            subtitle: _('Match GDM with GNOME theme or use custom'),
+            model: Gtk.StringList.new(['Match GNOME', 'Custom Background', 'Custom Color'])
+        });
+        const gdmModes = ['match-gnome', 'custom-background', 'custom-color'];
+        const currentGdmMode = settings.get_string('gdm-theme-mode');
+        const gdmModeIndex = gdmModes.indexOf(currentGdmMode);
+        if (gdmModeIndex >= 0) {
+            gdmModeRow.set_selected(gdmModeIndex);
+        }
+        gdmModeRow.connect('notify::selected', (row) => {
+            settings.set_string('gdm-theme-mode', gdmModes[row.selected]);
+        });
+        gdmGroup.add(gdmModeRow);
+        
+        // GDM background image
+        const gdmBgRow = new Adw.ActionRow({
+            title: _('Background Image'),
+            subtitle: _('Set custom background for login screen')
+        });
+        
+        const gdmBgButton = new Gtk.Button({
+            label: _('Select Image'),
+            valign: Gtk.Align.CENTER
+        });
+        gdmBgButton.connect('clicked', () => {
+            this._selectGDMBackground(settings);
+        });
+        gdmBgRow.add_suffix(gdmBgButton);
+        gdmGroup.add(gdmBgRow);
+        
+        // GDM background color
+        const gdmBgColorRow = this._createColorRow(
+            _('Background Color'),
+            _('Custom background color for login screen'),
+            'gdm-background-color',
+            settings
+        );
+        gdmGroup.add(gdmBgColorRow);
+        
+        gdmPage.add(gdmGroup);
+        window.add(gdmPage);
+        
+        // GTK Theme Page
+        const gtkPage = new Adw.PreferencesPage({
+            title: _('GTK & Desktop Themes'),
+            icon_name: 'preferences-desktop-theme-symbolic'
+        });
+        
+        const gtkGroup = new Adw.PreferencesGroup({
+            title: _('Desktop Theme Management'),
+            description: _('Apply beautiful GTK themes from vinceliuice\'s collection')
+        });
+        
+        // Enable GTK theming
+        const gtkEnableRow = new Adw.ActionRow({
+            title: _('Enable GTK Theming'),
+            subtitle: _('Manage GTK themes, icons, and cursors')
+        });
+        
+        const gtkEnableSwitch = new Gtk.Switch({
+            active: settings.get_boolean('enable-gtk-theming'),
+            valign: Gtk.Align.CENTER
+        });
+        settings.bind('enable-gtk-theming', gtkEnableSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+        gtkEnableRow.add_suffix(gtkEnableSwitch);
+        gtkEnableRow.activatable_widget = gtkEnableSwitch;
+        gtkGroup.add(gtkEnableRow);
+        
+        // GTK theme selection
+        const gtkThemeRow = new Adw.ComboRow({
+            title: _('GTK Theme'),
+            subtitle: _('Select a GTK theme'),
+            model: Gtk.StringList.new([
+                'None', 'Orchis', 'WhiteSur', 'Graphite', 'Colloid', 
+                'Qogir', 'Layan', 'Mojave', 'Fluent'
+            ])
+        });
+        const gtkThemes = ['none', 'Orchis', 'WhiteSur-gtk-theme', 'Graphite-gtk-theme', 
+                          'Colloid-gtk-theme', 'Qogir-theme', 'Layan-gtk-theme', 
+                          'Mojave-gtk-theme', 'Fluent-gtk-theme'];
+        const currentGtkTheme = settings.get_string('gtk-theme-name');
+        const gtkThemeIndex = gtkThemes.indexOf(currentGtkTheme);
+        if (gtkThemeIndex >= 0) {
+            gtkThemeRow.set_selected(gtkThemeIndex + 1);
+        }
+        gtkThemeRow.connect('notify::selected', (row) => {
+            if (row.selected > 0) {
+                settings.set_string('gtk-theme-name', gtkThemes[row.selected - 1]);
+            } else {
+                settings.set_string('gtk-theme-name', 'none');
+            }
+        });
+        gtkGroup.add(gtkThemeRow);
+        
+        // Icon theme selection
+        const iconThemeRow = new Adw.ComboRow({
+            title: _('Icon Theme'),
+            subtitle: _('Select an icon theme'),
+            model: Gtk.StringList.new([
+                'None', 'WhiteSur-icon-theme', 'Tela-icon-theme', 'Colloid-icon-theme',
+                'Qogir-icon-theme', 'Fluent-icon-theme', 'Tela-circle-icon-theme'
+            ])
+        });
+        const iconThemes = ['none', 'WhiteSur-icon-theme', 'Tela-icon-theme', 
+                           'Colloid-icon-theme', 'Qogir-icon-theme', 
+                           'Fluent-icon-theme', 'Tela-circle-icon-theme'];
+        const currentIconTheme = settings.get_string('icon-theme-name');
+        const iconThemeIndex = iconThemes.indexOf(currentIconTheme);
+        if (iconThemeIndex >= 0) {
+            iconThemeRow.set_selected(iconThemeIndex + 1);
+        }
+        iconThemeRow.connect('notify::selected', (row) => {
+            if (row.selected > 0) {
+                settings.set_string('icon-theme-name', iconThemes[row.selected - 1]);
+            } else {
+                settings.set_string('icon-theme-name', 'none');
+            }
+        });
+        gtkGroup.add(iconThemeRow);
+        
+        // Install theme button
+        const installThemeRow = new Adw.ActionRow({
+            title: _('Install Themes'),
+            subtitle: _('Download and install themes from vinceliuice\'s repositories')
+        });
+        
+        const installThemeButton = new Gtk.Button({
+            label: _('Install Selected'),
+            valign: Gtk.Align.CENTER
+        });
+        installThemeButton.connect('clicked', () => {
+            settings.set_boolean('gtk-install-trigger', !settings.get_boolean('gtk-install-trigger'));
+        });
+        installThemeRow.add_suffix(installThemeButton);
+        gtkGroup.add(installThemeRow);
+        
+        gtkPage.add(gtkGroup);
+        window.add(gtkPage);
+    }
+    
+    _selectGDMBackground(settings) {
+        const dialog = new Gtk.FileChooserDialog({
+            title: _('Select GDM Background Image'),
+            action: Gtk.FileChooserAction.OPEN,
+            modal: true
+        });
+        dialog.add_button(_('Cancel'), Gtk.ResponseType.CANCEL);
+        dialog.add_button(_('Select'), Gtk.ResponseType.ACCEPT);
+        
+        const filter = new Gtk.FileFilter();
+        filter.add_mime_type('image/*');
+        dialog.add_filter(filter);
+        
+        dialog.connect('response', (dialog, response) => {
+            if (response === Gtk.ResponseType.ACCEPT) {
+                const file = dialog.get_file();
+                const path = file.get_path();
+                settings.set_string('gdm-background', path);
+                log(`Selected GDM background: ${path}`);
+            }
+            dialog.destroy();
+        });
+        
+        dialog.show();
     }
 
     _addThemingPages(window, settings) {

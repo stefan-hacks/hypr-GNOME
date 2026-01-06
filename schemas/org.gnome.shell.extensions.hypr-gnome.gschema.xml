@@ -374,6 +374,86 @@
       <description>Rounded corners for the dash</description>
     </key>
     
+    <!-- GRUB2 Theme Management -->
+    <key name="enable-grub2-theming" type="b">
+      <default>false</default>
+      <summary>Enable GRUB2 Theming</summary>
+      <description>Enable GRUB2 bootloader theme management</description>
+    </key>
+    
+    <key name="grub2-theme-name" type="s">
+      <default>'none'</default>
+      <summary>GRUB2 Theme Name</summary>
+      <description>Selected GRUB2 bootloader theme</description>
+    </key>
+    
+    <key name="grub2-apply-trigger" type="b">
+      <default>false</default>
+      <summary>GRUB2 Apply Trigger</summary>
+      <description>Trigger to apply GRUB2 theme</description>
+    </key>
+    
+    <!-- GDM Theme Management -->
+    <key name="enable-gdm-theming" type="b">
+      <default>false</default>
+      <summary>Enable GDM Theming</summary>
+      <description>Enable GDM login screen theme management</description>
+    </key>
+    
+    <key name="gdm-theme-mode" type="s">
+      <default>'match-gnome'</default>
+      <summary>GDM Theme Mode</summary>
+      <description>GDM theme mode (match-gnome, custom-background, custom-color)</description>
+      <choices>
+        <choice value='match-gnome'/>
+        <choice value='custom-background'/>
+        <choice value='custom-color'/>
+      </choices>
+    </key>
+    
+    <key name="gdm-background" type="s">
+      <default>''</default>
+      <summary>GDM Background</summary>
+      <description>Custom background image path for GDM login screen</description>
+    </key>
+    
+    <key name="gdm-background-color" type="s">
+      <default>'#2e3440'</default>
+      <summary>GDM Background Color</summary>
+      <description>Custom background color for GDM login screen</description>
+    </key>
+    
+    <!-- GTK Theme Management -->
+    <key name="enable-gtk-theming" type="b">
+      <default>false</default>
+      <summary>Enable GTK Theming</summary>
+      <description>Enable GTK theme management for GNOME desktop</description>
+    </key>
+    
+    <key name="gtk-theme-name" type="s">
+      <default>'none'</default>
+      <summary>GTK Theme Name</summary>
+      <description>Selected GTK theme name</description>
+    </key>
+    
+    <key name="icon-theme-name" type="s">
+      <default>'none'</default>
+      <summary>Icon Theme Name</summary>
+      <description>Selected icon theme name</description>
+    </key>
+    
+    <key name="cursor-theme-name" type="s">
+      <default>'none'</default>
+      <summary>Cursor Theme Name</summary>
+      <description>Selected cursor theme name</description>
+    </key>
+    
+    <key name="gtk-install-trigger" type="b">
+      <default>false</default>
+      <summary>GTK Install Trigger</summary>
+      <description>Trigger to install GTK themes from repositories</description>
+    </key>
+    
   </schema>
 </schemalist>
 

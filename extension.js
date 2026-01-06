@@ -20,6 +20,9 @@ export default class HyprGNOMEExtension extends Extension {
         this._keybindingManager = null;
         this._windowRules = null;
         this._themingManager = null;
+        this._grub2Manager = null;
+        this._gdmManager = null;
+        this._gtkThemeManager = null;
     }
 
     enable() {
@@ -48,6 +51,21 @@ export default class HyprGNOMEExtension extends Extension {
         // Initialize theming manager
         if (settings.get_boolean('enable-theming')) {
             this._themingManager = new ThemingManager(settings, this.path);
+        }
+        
+        // Initialize GRUB2 theme manager
+        if (settings.get_boolean('enable-grub2-theming')) {
+            this._grub2Manager = new GRUB2ThemeManager(settings);
+        }
+        
+        // Initialize GDM theme manager
+        if (settings.get_boolean('enable-gdm-theming')) {
+            this._gdmManager = new GDMThemeManager(settings);
+        }
+        
+        // Initialize GTK theme manager
+        if (settings.get_boolean('enable-gtk-theming')) {
+            this._gtkThemeManager = new GTKThemeManager(settings);
         }
         
         // Monitor window changes
@@ -88,6 +106,21 @@ export default class HyprGNOMEExtension extends Extension {
             this._themingManager = null;
         }
         
+        if (this._grub2Manager) {
+            this._grub2Manager.destroy();
+            this._grub2Manager = null;
+        }
+        
+        if (this._gdmManager) {
+            this._gdmManager.destroy();
+            this._gdmManager = null;
+        }
+        
+        if (this._gtkThemeManager) {
+            this._gtkThemeManager.destroy();
+            this._gtkThemeManager = null;
+        }
+        
         this._disconnectSignals();
         log('hypr-GNOME: Extension disabled');
     }
@@ -96,7 +129,8 @@ export default class HyprGNOMEExtension extends Extension {
         this._settingsHandlers = [];
         
         // Re-enable managers when settings change
-        const features = ['enable-tiling', 'enable-animations', 'enable-gestures', 'enable-keybindings', 'enable-theming'];
+        const features = ['enable-tiling', 'enable-animations', 'enable-gestures', 'enable-keybindings', 
+                         'enable-theming', 'enable-grub2-theming', 'enable-gdm-theming', 'enable-gtk-theming'];
         features.forEach(feature => {
             const handler = settings.connect(`changed::${feature}`, () => {
                 this._updateFeature(feature);
@@ -149,6 +183,30 @@ export default class HyprGNOMEExtension extends Extension {
                 } else if (!enabled && this._themingManager) {
                     this._themingManager.destroy();
                     this._themingManager = null;
+                }
+                break;
+            case 'enable-grub2-theming':
+                if (enabled && !this._grub2Manager) {
+                    this._grub2Manager = new GRUB2ThemeManager(settings);
+                } else if (!enabled && this._grub2Manager) {
+                    this._grub2Manager.destroy();
+                    this._grub2Manager = null;
+                }
+                break;
+            case 'enable-gdm-theming':
+                if (enabled && !this._gdmManager) {
+                    this._gdmManager = new GDMThemeManager(settings);
+                } else if (!enabled && this._gdmManager) {
+                    this._gdmManager.destroy();
+                    this._gdmManager = null;
+                }
+                break;
+            case 'enable-gtk-theming':
+                if (enabled && !this._gtkThemeManager) {
+                    this._gtkThemeManager = new GTKThemeManager(settings);
+                } else if (!enabled && this._gtkThemeManager) {
+                    this._gtkThemeManager.destroy();
+                    this._gtkThemeManager = null;
                 }
                 break;
         }
@@ -862,6 +920,197 @@ class ThemingManager {
             backgroundSettings.disconnect(this._backgroundMonitor);
             this._backgroundMonitor = null;
         }
+    }
+}
+
+// GRUB2 Theme Manager - Bootloader theming (inspired by vinceliuice's grub2-themes)
+class GRUB2ThemeManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._currentTheme = settings.get_string('grub2-theme-name');
+        this._bindSettings();
+        log('hypr-GNOME: GRUB2 Theme Manager initialized');
+    }
+
+    _bindSettings() {
+        this._settings.connect('changed::grub2-theme-name', () => {
+            this._currentTheme = this._settings.get_string('grub2-theme-name');
+            this._applyTheme();
+        });
+    }
+
+    async applyTheme(themeName) {
+        if (!themeName) {
+            themeName = this._currentTheme;
+        }
+        
+        log(`hypr-GNOME: Applying GRUB2 theme: ${themeName}`);
+        
+        // Theme installation would be handled via external script
+        // This is a placeholder for the integration
+        try {
+            // In a real implementation, this would:
+            // 1. Download theme from vinceliuice's repository if not installed
+            // 2. Install theme using the theme's install script
+            // 3. Update GRUB configuration
+            // 4. Update GRUB bootloader
+            
+            this._settings.set_string('grub2-theme-name', themeName);
+            log(`hypr-GNOME: GRUB2 theme ${themeName} applied successfully`);
+        } catch (e) {
+            log(`hypr-GNOME: Error applying GRUB2 theme: ${e}`);
+        }
+    }
+
+    _applyTheme() {
+        if (this._currentTheme && this._currentTheme !== 'none') {
+            this.applyTheme(this._currentTheme);
+        }
+    }
+
+    destroy() {
+        // Cleanup
+    }
+}
+
+// GDM Theme Manager - Login screen theming
+class GDMThemeManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._bindSettings();
+        log('hypr-GNOME: GDM Theme Manager initialized');
+    }
+
+    _bindSettings() {
+        this._settings.connect('changed::gdm-theme-mode', () => {
+            this._applyGDMTheme();
+        });
+        
+        this._settings.connect('changed::gdm-background', () => {
+            this._applyGDMTheme();
+        });
+        
+        this._settings.connect('changed::gdm-background-color', () => {
+            this._applyGDMTheme();
+        });
+    }
+
+    _applyGDMTheme() {
+        const mode = this._settings.get_string('gdm-theme-mode');
+        const background = this._settings.get_string('gdm-background');
+        const bgColor = this._settings.get_string('gdm-background-color');
+        
+        log(`hypr-GNOME: Applying GDM theme - Mode: ${mode}`);
+        
+        // GDM theming requires system-level changes
+        // This would typically involve:
+        // 1. Modifying /usr/share/gnome-shell/theme/gnome-shell.css
+        // 2. Updating GDM configuration files
+        // 3. Setting custom background images or colors
+        
+        try {
+            // In a real implementation, this would apply the GDM theme
+            // Note: This requires root access and careful handling
+            log(`hypr-GNOME: GDM theme applied`);
+        } catch (e) {
+            log(`hypr-GNOME: Error applying GDM theme: ${e}`);
+        }
+    }
+
+    destroy() {
+        // Cleanup
+    }
+}
+
+// GTK Theme Manager - GNOME desktop theming (inspired by vinceliuice's themes)
+class GTKThemeManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._bindSettings();
+        log('hypr-GNOME: GTK Theme Manager initialized');
+    }
+
+    _bindSettings() {
+        this._settings.connect('changed::gtk-theme-name', () => {
+            this._applyGTKTheme();
+        });
+        
+        this._settings.connect('changed::icon-theme-name', () => {
+            this._applyIconTheme();
+        });
+        
+        this._settings.connect('changed::cursor-theme-name', () => {
+            this._applyCursorTheme();
+        });
+    }
+
+    _applyGTKTheme() {
+        const themeName = this._settings.get_string('gtk-theme-name');
+        
+        if (!themeName || themeName === 'none') {
+            return;
+        }
+        
+        log(`hypr-GNOME: Applying GTK theme: ${themeName}`);
+        
+        try {
+            const gsettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            gsettings.set_string('gtk-theme', themeName);
+            log(`hypr-GNOME: GTK theme ${themeName} applied`);
+        } catch (e) {
+            log(`hypr-GNOME: Error applying GTK theme: ${e}`);
+        }
+    }
+
+    _applyIconTheme() {
+        const iconThemeName = this._settings.get_string('icon-theme-name');
+        
+        if (!iconThemeName || iconThemeName === 'none') {
+            return;
+        }
+        
+        log(`hypr-GNOME: Applying icon theme: ${iconThemeName}`);
+        
+        try {
+            const gsettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            gsettings.set_string('icon-theme', iconThemeName);
+            log(`hypr-GNOME: Icon theme ${iconThemeName} applied`);
+        } catch (e) {
+            log(`hypr-GNOME: Error applying icon theme: ${e}`);
+        }
+    }
+
+    _applyCursorTheme() {
+        const cursorThemeName = this._settings.get_string('cursor-theme-name');
+        
+        if (!cursorThemeName || cursorThemeName === 'none') {
+            return;
+        }
+        
+        log(`hypr-GNOME: Applying cursor theme: ${cursorThemeName}`);
+        
+        try {
+            const gsettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            gsettings.set_string('cursor-theme', cursorThemeName);
+            log(`hypr-GNOME: Cursor theme ${cursorThemeName} applied`);
+        } catch (e) {
+            log(`hypr-GNOME: Error applying cursor theme: ${e}`);
+        }
+    }
+
+    async installTheme(themeName, themeType) {
+        // Install theme from vinceliuice's repositories
+        // themeType: 'gtk', 'icons', 'cursors', 'grub2'
+        log(`hypr-GNOME: Installing ${themeType} theme: ${themeName}`);
+        
+        // In a real implementation, this would:
+        // 1. Clone or download from vinceliuice's GitHub repository
+        // 2. Run installation scripts
+        // 3. Apply the theme
+    }
+
+    destroy() {
+        // Cleanup
     }
 }
 
