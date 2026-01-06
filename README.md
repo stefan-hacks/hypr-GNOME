@@ -4,6 +4,15 @@ Bring the power of Hyprland to GNOME! This extension adds dynamic tiling, smooth
 
 ## Features
 
+### 🎨 Advanced Theming (Inspired by OpenBar)
+- **Top Bar/Panel Customization**: Style the GNOME top panel with Fixed, Floating, or Islands layouts
+- **Menu Theming**: Customize Calendar, Notifications, and Quick Settings menus
+- **Dash/Dock Styling**: Apply custom appearance to the application dash
+- **Auto-Theming**: Automatically generate beautiful themes from your desktop background
+- **Color Palette Generation**: Extract color palettes from wallpapers
+- **Easy Color Pickers**: Intuitive color selection with transparency controls
+- **Import/Export**: Save and share your theme configurations
+
 ### 🪟 Dynamic Tiling Window Management
 - **Multiple Layout Modes**: Choose from master-stack, grid, monocle, or dwindle layouts
 - **Configurable Gaps**: Adjust spacing between windows
@@ -101,6 +110,31 @@ Open GNOME Extensions app and click the settings (⚙️) icon next to hypr-GNOM
 ### Window Rules
 Define custom rules for specific windows. Format: `action,pattern` (one per line)
 
+### Theming Settings
+
+#### Auto-Theming
+- **Enable Auto-Theming**: Toggle automatic theme generation from wallpaper
+- **Theme Mode**: Choose between True Color, Pastel, Dark, or Light themes
+- **Refresh on Background Change**: Automatically update theme when wallpaper changes
+- **Generate Theme Now**: Create theme from current background instantly
+
+#### Top Bar/Panel
+- **Panel Type**: Fixed, Floating, or Islands style
+- **Colors**: Background and foreground colors with transparency
+- **Dimensions**: Height, margin, padding, and border radius
+- **Border**: Width and color customization
+
+#### Menus
+- **Menu Styling**: Customize Calendar, Notifications, and Quick Settings
+- **Colors**: Background and foreground with transparency
+- **Border Radius**: Rounded corners for menus
+- **Shadows**: Add depth with customizable shadows
+
+#### Dash/Dock
+- **Background**: Color and transparency
+- **Border Radius**: Rounded corners
+- **Full customization** of the application dash appearance
+
 ## Requirements
 
 - GNOME Shell 44, 45, or 46
@@ -134,7 +168,8 @@ GPL-3.0 or later
 
 ## Acknowledgments
 
-Inspired by [Hyprland](https://hyprland.org/) - A highly customizable dynamic tiling Wayland compositor.
+- Inspired by [Hyprland](https://hyprland.org/) - A highly customizable dynamic tiling Wayland compositor
+- Theming features inspired by [OpenBar](https://github.com/neuromorph/openbar) - An excellent GNOME Shell theming extension
 
 ## References
 

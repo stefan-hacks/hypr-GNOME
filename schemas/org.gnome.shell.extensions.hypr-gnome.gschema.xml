@@ -179,6 +179,201 @@
       <description>Window-specific rules (format: action,pattern per line)</description>
     </key>
     
+    <!-- Theming Toggle -->
+    <key name="enable-theming" type="b">
+      <default>false</default>
+      <summary>Enable Theming</summary>
+      <description>Enable custom theming for Top Bar, Menus, and Dash</description>
+    </key>
+    
+    <!-- Auto-Theming Settings -->
+    <key name="auto-theme-enabled" type="b">
+      <default>false</default>
+      <summary>Enable Auto-Theming</summary>
+      <description>Automatically generate themes from desktop background</description>
+    </key>
+    
+    <key name="auto-theme-refresh" type="b">
+      <default>false</default>
+      <summary>Auto-Refresh Theme</summary>
+      <description>Update theme when wallpaper changes</description>
+    </key>
+    
+    <key name="auto-theme-mode" type="s">
+      <default>'true-color'</default>
+      <summary>Auto-Theme Mode</summary>
+      <description>Color treatment for auto-generated themes</description>
+      <choices>
+        <choice value='true-color'/>
+        <choice value='pastel'/>
+        <choice value='dark'/>
+        <choice value='light'/>
+      </choices>
+    </key>
+    
+    <key name="auto-theme-trigger" type="b">
+      <default>false</default>
+      <summary>Auto-Theme Trigger</summary>
+      <description>Trigger to regenerate theme from background</description>
+    </key>
+    
+    <!-- Panel/Top Bar Theming -->
+    <key name="theme-panel-enable" type="b">
+      <default>false</default>
+      <summary>Enable Panel Theming</summary>
+      <description>Apply custom styling to the top panel</description>
+    </key>
+    
+    <key name="theme-panel-type" type="s">
+      <default>'fixed'</default>
+      <summary>Panel Type</summary>
+      <description>Panel style (fixed, floating, islands)</description>
+      <choices>
+        <choice value='fixed'/>
+        <choice value='floating'/>
+        <choice value='islands'/>
+      </choices>
+    </key>
+    
+    <key name="theme-panel-bg-color" type="s">
+      <default>'#2e3440'</default>
+      <summary>Panel Background Color</summary>
+      <description>Background color for the top panel</description>
+    </key>
+    
+    <key name="theme-panel-bg-alpha" type="d">
+      <default>0.9</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Panel Background Transparency</summary>
+      <description>Background opacity for the top panel (0.0 = transparent, 1.0 = opaque)</description>
+    </key>
+    
+    <key name="theme-panel-fg-color" type="s">
+      <default>'#eceff4'</default>
+      <summary>Panel Foreground Color</summary>
+      <description>Text and icon color for the top panel</description>
+    </key>
+    
+    <key name="theme-panel-height" type="i">
+      <default>40</default>
+      <range min="20" max="100"/>
+      <summary>Panel Height</summary>
+      <description>Height of the top panel in pixels</description>
+    </key>
+    
+    <key name="theme-panel-margin" type="i">
+      <default>0</default>
+      <range min="0" max="50"/>
+      <summary>Panel Margin</summary>
+      <description>Margin around the panel in pixels</description>
+    </key>
+    
+    <key name="theme-panel-padding" type="i">
+      <default>8</default>
+      <range min="0" max="30"/>
+      <summary>Panel Padding</summary>
+      <description>Internal padding of the panel in pixels</description>
+    </key>
+    
+    <key name="theme-panel-radius" type="i">
+      <default>0</default>
+      <range min="0" max="50"/>
+      <summary>Panel Border Radius</summary>
+      <description>Rounded corners for the panel (0 = rectangular, high = pill)</description>
+    </key>
+    
+    <key name="theme-panel-border-width" type="i">
+      <default>0</default>
+      <range min="0" max="10"/>
+      <summary>Panel Border Width</summary>
+      <description>Border thickness for the panel</description>
+    </key>
+    
+    <key name="theme-panel-border-color" type="s">
+      <default>'#3b4252'</default>
+      <summary>Panel Border Color</summary>
+      <description>Border color for the top panel</description>
+    </key>
+    
+    <!-- Menu Theming -->
+    <key name="theme-menu-enable" type="b">
+      <default>false</default>
+      <summary>Enable Menu Theming</summary>
+      <description>Apply custom styling to menus</description>
+    </key>
+    
+    <key name="theme-menu-bg-color" type="s">
+      <default>'#3b4252'</default>
+      <summary>Menu Background Color</summary>
+      <description>Background color for menus</description>
+    </key>
+    
+    <key name="theme-menu-bg-alpha" type="d">
+      <default>0.95</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Menu Background Transparency</summary>
+      <description>Background opacity for menus</description>
+    </key>
+    
+    <key name="theme-menu-fg-color" type="s">
+      <default>'#eceff4'</default>
+      <summary>Menu Foreground Color</summary>
+      <description>Text color in menus</description>
+    </key>
+    
+    <key name="theme-menu-radius" type="i">
+      <default>8</default>
+      <range min="0" max="30"/>
+      <summary>Menu Border Radius</summary>
+      <description>Rounded corners for menus</description>
+    </key>
+    
+    <key name="theme-menu-border-width" type="i">
+      <default>1</default>
+      <range min="0" max="10"/>
+      <summary>Menu Border Width</summary>
+      <description>Border thickness for menus</description>
+    </key>
+    
+    <key name="theme-menu-border-color" type="s">
+      <default>'#4c566a'</default>
+      <summary>Menu Border Color</summary>
+      <description>Border color for menus</description>
+    </key>
+    
+    <key name="theme-menu-shadow" type="s">
+      <default>'0 2px 8px rgba(0, 0, 0, 0.3)'</default>
+      <summary>Menu Shadow</summary>
+      <description>Box shadow for menus</description>
+    </key>
+    
+    <!-- Dash/Dock Theming -->
+    <key name="theme-dash-enable" type="b">
+      <default>false</default>
+      <summary>Enable Dash Theming</summary>
+      <description>Apply custom styling to the dash</description>
+    </key>
+    
+    <key name="theme-dash-bg-color" type="s">
+      <default>'#2e3440'</default>
+      <summary>Dash Background Color</summary>
+      <description>Background color for the dash</description>
+    </key>
+    
+    <key name="theme-dash-bg-alpha" type="d">
+      <default>0.9</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Dash Background Transparency</summary>
+      <description>Background opacity for the dash</description>
+    </key>
+    
+    <key name="theme-dash-radius" type="i">
+      <default>12</default>
+      <range min="0" max="30"/>
+      <summary>Dash Border Radius</summary>
+      <description>Rounded corners for the dash</description>
+    </key>
+    
   </schema>
 </schemalist>
 
