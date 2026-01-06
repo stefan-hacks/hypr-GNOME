@@ -40,7 +40,7 @@ Define rules for specific windows using pattern matching:
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/hyprwm/hypr-GNOME.git
+git clone https://github.com/stefan-hacks/hypr-GNOME.git
 cd hypr-GNOME
 ```
 

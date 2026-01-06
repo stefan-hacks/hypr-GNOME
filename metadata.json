@@ -8,7 +8,7 @@
     "45",
     "46"
   ],
-  "url": "https://github.com/hyprwm/hypr-GNOME",
+  "url": "https://github.com/stefan-hacks/hypr-GNOME",
   "settings-schema": "org.gnome.shell.extensions.hypr-gnome",
   "gettext-domain": "hypr-gnome"
 }
