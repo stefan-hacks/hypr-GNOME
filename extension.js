@@ -1,0 +1,611 @@
+/* hypr-GNOME Extension - Bringing Hyprland features to GNOME */
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Meta from 'gi://Meta';
+import * as Gio from 'gi://Gio';
+import * as Clutter from 'gi://Clutter';
+import * as St from 'gi://St';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+
+let settings;
+
+export default class HyprGNOMEExtension extends Extension {
+    constructor(metadata) {
+        super(metadata);
+        this._tilingManager = null;
+        this._animationManager = null;
+        this._gestureManager = null;
+        this._keybindingManager = null;
+        this._windowRules = null;
+    }
+
+    enable() {
+        settings = this.getSettings();
+        this._connectSettings();
+        
+        // Initialize managers based on user preferences
+        if (settings.get_boolean('enable-tiling')) {
+            this._tilingManager = new TilingManager(settings);
+        }
+        
+        if (settings.get_boolean('enable-animations')) {
+            this._animationManager = new AnimationManager(settings);
+        }
+        
+        if (settings.get_boolean('enable-gestures')) {
+            this._gestureManager = new GestureManager(settings);
+        }
+        
+        if (settings.get_boolean('enable-keybindings')) {
+            this._keybindingManager = new KeybindingManager(settings);
+        }
+        
+        this._windowRules = new WindowRules(settings);
+        
+        // Monitor window changes
+        this._windowTracker = Meta.WindowTracker.get_default();
+        this._connectSignals();
+        
+        log('hypr-GNOME: Extension enabled');
+    }
+
+    disable() {
+        if (this._tilingManager) {
+            this._tilingManager.destroy();
+            this._tilingManager = null;
+        }
+        
+        if (this._animationManager) {
+            this._animationManager.destroy();
+            this._animationManager = null;
+        }
+        
+        if (this._gestureManager) {
+            this._gestureManager.destroy();
+            this._gestureManager = null;
+        }
+        
+        if (this._keybindingManager) {
+            this._keybindingManager.destroy();
+            this._keybindingManager = null;
+        }
+        
+        if (this._windowRules) {
+            this._windowRules.destroy();
+            this._windowRules = null;
+        }
+        
+        this._disconnectSignals();
+        log('hypr-GNOME: Extension disabled');
+    }
+
+    _connectSettings() {
+        this._settingsHandlers = [];
+        
+        // Re-enable managers when settings change
+        const features = ['enable-tiling', 'enable-animations', 'enable-gestures', 'enable-keybindings'];
+        features.forEach(feature => {
+            const handler = settings.connect(`changed::${feature}`, () => {
+                this._updateFeature(feature);
+            });
+            this._settingsHandlers.push(handler);
+        });
+    }
+
+    _updateFeature(feature) {
+        const enabled = settings.get_boolean(feature);
+        
+        switch (feature) {
+            case 'enable-tiling':
+                if (enabled && !this._tilingManager) {
+                    this._tilingManager = new TilingManager(settings);
+                } else if (!enabled && this._tilingManager) {
+                    this._tilingManager.destroy();
+                    this._tilingManager = null;
+                }
+                break;
+            case 'enable-animations':
+                if (enabled && !this._animationManager) {
+                    this._animationManager = new AnimationManager(settings);
+                } else if (!enabled && this._animationManager) {
+                    this._animationManager.destroy();
+                    this._animationManager = null;
+                }
+                break;
+            case 'enable-gestures':
+                if (enabled && !this._gestureManager) {
+                    this._gestureManager = new GestureManager(settings);
+                } else if (!enabled && this._gestureManager) {
+                    this._gestureManager.destroy();
+                    this._gestureManager = null;
+                }
+                break;
+            case 'enable-keybindings':
+                if (enabled && !this._keybindingManager) {
+                    this._keybindingManager = new KeybindingManager(settings);
+                } else if (!enabled && this._keybindingManager) {
+                    this._keybindingManager.destroy();
+                    this._keybindingManager = null;
+                }
+                break;
+        }
+    }
+
+    _connectSignals() {
+        this._windowSignals = [];
+        const display = global.display;
+        
+        // Monitor window creation
+        this._windowSignals.push([
+            display,
+            display.connect('window-created', (_, window) => {
+                if (this._tilingManager) {
+                    this._tilingManager.handleNewWindow(window);
+                }
+            })
+        ]);
+        
+        // Monitor workspace changes
+        this._windowSignals.push([
+            display,
+            display.connect('notify::focus-window', () => {
+                if (this._tilingManager) {
+                    this._tilingManager.updateFocus();
+                }
+            })
+        ]);
+    }
+
+    _disconnectSignals() {
+        if (this._windowSignals) {
+            this._windowSignals.forEach(([obj, id]) => {
+                obj.disconnect(id);
+            });
+            this._windowSignals = [];
+        }
+        
+        if (this._settingsHandlers) {
+            this._settingsHandlers.forEach(handler => {
+                settings.disconnect(handler);
+            });
+            this._settingsHandlers = [];
+        }
+    }
+}
+
+// Tiling Manager - Dynamic window tiling
+class TilingManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._windows = new Map();
+        this._layouts = new Map(); // workspace -> layout
+        this._layoutMode = settings.get_string('tiling-layout');
+        this._keybindings = [];
+        
+        this._bindSettings();
+        this._setupKeybindings();
+        log('hypr-GNOME: Tiling Manager initialized');
+    }
+
+    _bindSettings() {
+        this._settings.connect('changed::tiling-layout', () => {
+            this._layoutMode = this._settings.get_string('tiling-layout');
+            this._retileAll();
+        });
+        
+        this._settings.connect('changed::tiling-gaps', () => {
+            this._retileAll();
+        });
+        
+        this._settings.connect('changed::tiling-orientation', () => {
+            this._retileAll();
+        });
+    }
+
+    _setupKeybindings() {
+        // Window movement shortcuts
+        const keybindings = [
+            ['move-window-left', () => this._moveWindow('left')],
+            ['move-window-right', () => this._moveWindow('right')],
+            ['move-window-up', () => this._moveWindow('up')],
+            ['move-window-down', () => this._moveWindow('down')],
+            ['toggle-tiling', () => this._toggleTiling()],
+            ['toggle-float', () => this._toggleFloat()],
+            ['focus-left', () => this._focusWindow('left')],
+            ['focus-right', () => this._focusWindow('right')],
+            ['focus-up', () => this._focusWindow('up')],
+            ['focus-down', () => this._focusWindow('down')]
+        ];
+        
+        keybindings.forEach(([name, callback]) => {
+            try {
+                Main.wm.addKeybinding(
+                    name,
+                    this._settings,
+                    Meta.KeyBindingFlags.NONE,
+                    callback
+                );
+                this._keybindings.push(name);
+            } catch (e) {
+                log(`hypr-GNOME: Failed to add keybinding ${name}: ${e}`);
+            }
+        });
+    }
+
+    handleNewWindow(window) {
+        if (window.get_window_type() !== Meta.WindowType.NORMAL) {
+            return;
+        }
+        
+        const workspace = window.get_workspace();
+        if (!this._layouts.has(workspace)) {
+            this._layouts.set(workspace, {
+                mode: this._layoutMode,
+                windows: []
+            });
+        }
+        
+        const layout = this._layouts.get(workspace);
+        layout.windows.push(window);
+        
+        this._tileWindows(workspace);
+    }
+
+    _tileWindows(workspace) {
+        const layout = this._layouts.get(workspace);
+        if (!layout) return;
+        
+        const windows = layout.windows.filter(w => 
+            !w.minimized && 
+            w.get_workspace() === workspace &&
+            w.get_window_type() === Meta.WindowType.NORMAL
+        );
+        
+        if (windows.length === 0) return;
+        
+        const gap = this._settings.get_int('tiling-gaps');
+        const monitor = workspace.index() >= 0 ? 
+            Main.layoutManager.monitors[workspace.index() % Main.layoutManager.monitors.length] :
+            Main.layoutManager.primaryMonitor;
+        
+        const workArea = monitor.work_area;
+        const totalGaps = gap * (windows.length + 1);
+        const availableWidth = workArea.width - totalGaps;
+        const availableHeight = workArea.height - totalGaps;
+        
+        if (this._layoutMode === 'monocle') {
+            // Monocle layout - fullscreen with gaps
+            windows.forEach(window => {
+                window.move_frame(false, workArea.x + gap, workArea.y + gap);
+                window.move_resize_frame(
+                    false,
+                    workArea.x + gap,
+                    workArea.y + gap,
+                    availableWidth,
+                    availableHeight
+                );
+            });
+        } else if (this._layoutMode === 'grid') {
+            // Grid layout
+            const cols = Math.ceil(Math.sqrt(windows.length));
+            const rows = Math.ceil(windows.length / cols);
+            const cellWidth = Math.floor(availableWidth / cols);
+            const cellHeight = Math.floor(availableHeight / rows);
+            
+            windows.forEach((window, index) => {
+                const row = Math.floor(index / cols);
+                const col = index % cols;
+                const x = workArea.x + gap + (col * (cellWidth + gap));
+                const y = workArea.y + gap + (row * (cellHeight + gap));
+                
+                window.move_frame(false, x, y);
+                window.move_resize_frame(false, x, y, cellWidth, cellHeight);
+            });
+        } else {
+            // Master-stack layout (default)
+            const masterCount = Math.min(
+                this._settings.get_int('tiling-master-count'),
+                windows.length
+            );
+            const stackCount = windows.length - masterCount;
+            
+            if (masterCount > 0) {
+                const masterWidth = stackCount > 0 ? 
+                    Math.floor(availableWidth * this._settings.get_double('tiling-master-ratio')) :
+                    availableWidth;
+                const masterHeight = Math.floor(availableHeight / masterCount);
+                
+                for (let i = 0; i < masterCount; i++) {
+                    const window = windows[i];
+                    const y = workArea.y + gap + (i * (masterHeight + gap));
+                    window.move_frame(false, workArea.x + gap, y);
+                    window.move_resize_frame(false, workArea.x + gap, y, masterWidth, masterHeight);
+                }
+            }
+            
+            if (stackCount > 0) {
+                const stackX = workArea.x + gap + 
+                    Math.floor(availableWidth * this._settings.get_double('tiling-master-ratio')) + gap;
+                const stackWidth = availableWidth - 
+                    Math.floor(availableWidth * this._settings.get_double('tiling-master-ratio')) - gap;
+                const stackHeight = Math.floor(availableHeight / stackCount);
+                
+                for (let i = 0; i < stackCount; i++) {
+                    const window = windows[masterCount + i];
+                    const y = workArea.y + gap + (i * (stackHeight + gap));
+                    window.move_frame(false, stackX, y);
+                    window.move_resize_frame(false, stackX, y, stackWidth, stackHeight);
+                }
+            }
+        }
+    }
+
+    _retileAll() {
+        this._layouts.forEach((layout, workspace) => {
+            this._tileWindows(workspace);
+        });
+    }
+
+    _moveWindow(direction) {
+        const window = global.display.get_focus_window();
+        if (!window) return;
+        
+        // Implementation would move window to adjacent workspace or position
+        this._retileAll();
+    }
+
+    _focusWindow(direction) {
+        const window = global.display.get_focus_window();
+        if (!window) return;
+        
+        const workspace = window.get_workspace();
+        const layout = this._layouts.get(workspace);
+        if (!layout) return;
+        
+        const windows = layout.windows.filter(w => 
+            !w.minimized && w.get_workspace() === workspace
+        );
+        
+        const currentIndex = windows.indexOf(window);
+        if (currentIndex < 0) return;
+        
+        let nextIndex = currentIndex;
+        // Simple focus cycling - can be enhanced with spatial logic
+        if (direction === 'right' || direction === 'down') {
+            nextIndex = (currentIndex + 1) % windows.length;
+        } else {
+            nextIndex = (currentIndex - 1 + windows.length) % windows.length;
+        }
+        
+        windows[nextIndex].raise();
+        Main.activateWindow(windows[nextIndex], global.get_current_time());
+    }
+
+    _toggleTiling() {
+        const window = global.display.get_focus_window();
+        if (!window) return;
+        
+        // Toggle between tiled and floating
+        this._retileAll();
+    }
+
+    _toggleFloat() {
+        const window = global.display.get_focus_window();
+        if (!window) return;
+        
+        // Toggle floating state
+        window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
+        this._retileAll();
+    }
+
+    destroy() {
+        this._keybindings.forEach(name => {
+            try {
+                Main.wm.removeKeybinding(name);
+            } catch (e) {
+                log(`hypr-GNOME: Failed to remove keybinding ${name}: ${e}`);
+            }
+        });
+        this._keybindings = [];
+    }
+}
+
+// Animation Manager - Smooth animations and transitions
+class AnimationManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._windowSignals = [];
+        this._connectSignals();
+        log('hypr-GNOME: Animation Manager initialized');
+    }
+
+    _connectSignals() {
+        const display = global.display;
+        
+        this._windowSignals.push([
+            display,
+            display.connect('window-created', (_, window) => {
+                this._animateWindowIn(window);
+            })
+        ]);
+        
+        this._windowSignals.push([
+            display,
+            display.connect('window-demands-attention', (_, window) => {
+                this._animateAttention(window);
+            })
+        ]);
+    }
+
+    _animateWindowIn(window) {
+        if (!this._settings.get_boolean('animation-window-open')) return;
+        
+        const actor = window.get_compositor_private();
+        if (!actor) return;
+        
+        const duration = this._settings.get_int('animation-duration');
+        const curve = this._settings.get_string('animation-curve');
+        
+        actor.opacity = 0;
+        actor.scale_x = 0.9;
+        actor.scale_y = 0.9;
+        
+        actor.ease({
+            opacity: 255,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: duration,
+            mode: this._getEasingMode(curve)
+        });
+    }
+
+    _animateAttention(window) {
+        if (!this._settings.get_boolean('animation-attention')) return;
+        
+        const actor = window.get_compositor_private();
+        if (!actor) return;
+        
+        const duration = this._settings.get_int('animation-duration');
+        
+        actor.ease({
+            scale_x: 1.05,
+            scale_y: 1.05,
+            duration: duration / 2,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                actor.ease({
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: duration / 2,
+                    mode: Clutter.AnimationMode.EASE_IN_QUAD
+                });
+            }
+        });
+    }
+
+    _getEasingMode(curve) {
+        const modes = {
+            'linear': Clutter.AnimationMode.LINEAR,
+            'ease-in': Clutter.AnimationMode.EASE_IN_QUAD,
+            'ease-out': Clutter.AnimationMode.EASE_OUT_QUAD,
+            'ease-in-out': Clutter.AnimationMode.EASE_IN_OUT_QUAD,
+            'spring': Clutter.AnimationMode.SPRING
+        };
+        return modes[curve] || Clutter.AnimationMode.EASE_OUT_QUAD;
+    }
+
+    destroy() {
+        if (this._windowSignals) {
+            this._windowSignals.forEach(([obj, id]) => {
+                obj.disconnect(id);
+            });
+            this._windowSignals = [];
+        }
+    }
+}
+
+// Gesture Manager - Touchpad gestures
+class GestureManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._tracker = Clutter.DeviceManager.get_default();
+        this._connectGestures();
+        log('hypr-GNOME: Gesture Manager initialized');
+    }
+
+    _connectGestures() {
+        if (!this._settings.get_boolean('gesture-swipe-workspace')) return;
+        
+        // Touchpad swipe gestures for workspace switching
+        // This is a simplified implementation
+        // Full implementation would require more complex gesture detection
+    }
+
+    destroy() {
+        // Cleanup gestures
+    }
+}
+
+// Keybinding Manager - Custom keybindings
+class KeybindingManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._keybindings = new Map();
+        this._setupCustomKeybindings();
+        log('hypr-GNOME: Keybinding Manager initialized');
+    }
+
+    _setupCustomKeybindings() {
+        // Additional keybindings can be configured here
+        // Custom keybindings are primarily handled through GSettings
+    }
+
+    destroy() {
+        // Cleanup keybindings
+    }
+}
+
+// Window Rules - Window-specific behavior rules
+class WindowRules {
+    constructor(settings) {
+        this._settings = settings;
+        this._rules = [];
+        this._loadRules();
+        log('hypr-GNOME: Window Rules initialized');
+    }
+
+    _loadRules() {
+        // Load window rules from settings
+        // This would parse rules like "windowrule=float,.*" format
+        const rulesText = this._settings.get_string('window-rules');
+        if (rulesText) {
+            this._rules = this._parseRules(rulesText);
+        }
+    }
+
+    _parseRules(rulesText) {
+        // Simple rule parser
+        // Format: "action,pattern" (e.g., "float,.*firefox.*")
+        return rulesText.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const [action, ...patternParts] = line.split(',');
+                return {
+                    action: action.trim(),
+                    pattern: new RegExp(patternParts.join(',').trim())
+                };
+            });
+    }
+
+    applyRules(window) {
+        const title = window.get_title();
+        const wmClass = window.get_wm_class();
+        const checkString = `${title} ${wmClass}`;
+        
+        for (const rule of this._rules) {
+            if (rule.pattern.test(checkString)) {
+                this._applyRule(window, rule.action);
+                break;
+            }
+        }
+    }
+
+    _applyRule(window, action) {
+        switch (action) {
+            case 'float':
+                window.unmaximize(Meta.MaximizeFlags.HORIZONTAL | Meta.MaximizeFlags.VERTICAL);
+                break;
+            case 'tile':
+                // Force tiling
+                break;
+            case 'fullscreen':
+                window.make_fullscreen();
+                break;
+        }
+    }
+
+    destroy() {
+        this._rules = [];
+    }
+}
+

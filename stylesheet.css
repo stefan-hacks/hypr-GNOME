@@ -1,0 +1,45 @@
+/* hypr-GNOME Extension Stylesheet */
+
+/* Window decorations with Hyprland-inspired styling */
+.hypr-window {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation containers */
+.hypr-animation-container {
+    transition: all 0.3s ease-out;
+}
+
+/* Floating window indicator */
+.hypr-float-indicator {
+    border: 2px solid rgba(138, 180, 248, 0.8);
+    background: rgba(138, 180, 248, 0.1);
+}
+
+/* Tiled window indicator */
+.hypr-tile-indicator {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Focus highlight */
+.hypr-focused {
+    border: 2px solid rgba(166, 227, 161, 0.8);
+    box-shadow: 0 0 20px rgba(166, 227, 161, 0.3);
+}
+
+/* Blur effect for background windows */
+.hypr-blur-background {
+    filter: blur(5px);
+    opacity: 0.8;
+}
+
+/* Workspace indicator styling */
+.hypr-workspace-indicator {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 12px;
+}
+

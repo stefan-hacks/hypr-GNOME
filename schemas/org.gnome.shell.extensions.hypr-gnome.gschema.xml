@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="hypr-gnome">
+  <schema id="org.gnome.shell.extensions.hypr-gnome" path="/org/gnome/shell/extensions/hypr-gnome/">
+    
+    <!-- Feature Toggles -->
+    <key name="enable-tiling" type="b">
+      <default>true</default>
+      <summary>Enable Dynamic Tiling</summary>
+      <description>Enable automatic window tiling with customizable layouts</description>
+    </key>
+    
+    <key name="enable-animations" type="b">
+      <default>true</default>
+      <summary>Enable Animations</summary>
+      <description>Enable smooth window animations and transitions</description>
+    </key>
+    
+    <key name="enable-gestures" type="b">
+      <default>true</default>
+      <summary>Enable Touchpad Gestures</summary>
+      <description>Enable touchpad swipe gestures for workspace navigation</description>
+    </key>
+    
+    <key name="enable-keybindings" type="b">
+      <default>true</default>
+      <summary>Enable Custom Keybindings</summary>
+      <description>Enable Hyprland-style keyboard shortcuts</description>
+    </key>
+    
+    <!-- Tiling Settings -->
+    <key name="tiling-layout" type="s">
+      <default>'master-stack'</default>
+      <summary>Tiling Layout</summary>
+      <description>The default tiling layout (master-stack, grid, monocle, dwindle)</description>
+      <choices>
+        <choice value='master-stack'/>
+        <choice value='grid'/>
+        <choice value='monocle'/>
+        <choice value='dwindle'/>
+      </choices>
+    </key>
+    
+    <key name="tiling-gaps" type="i">
+      <default>10</default>
+      <range min="0" max="50"/>
+      <summary>Gap Size</summary>
+      <description>Space between tiled windows in pixels</description>
+    </key>
+    
+    <key name="tiling-master-count" type="i">
+      <default>1</default>
+      <range min="1" max="10"/>
+      <summary>Master Window Count</summary>
+      <description>Number of windows in the master area</description>
+    </key>
+    
+    <key name="tiling-master-ratio" type="d">
+      <default>0.55</default>
+      <range min="0.1" max="0.9"/>
+      <summary>Master Area Ratio</summary>
+      <description>Width ratio of master area (0.0 to 1.0)</description>
+    </key>
+    
+    <key name="tiling-orientation" type="s">
+      <default>'horizontal'</default>
+      <summary>Tiling Orientation</summary>
+      <description>Orientation for tiling (horizontal or vertical)</description>
+      <choices>
+        <choice value='horizontal'/>
+        <choice value='vertical'/>
+      </choices>
+    </key>
+    
+    <!-- Animation Settings -->
+    <key name="animation-duration" type="i">
+      <default>300</default>
+      <range min="100" max="2000"/>
+      <summary>Animation Duration</summary>
+      <description>Duration of animations in milliseconds</description>
+    </key>
+    
+    <key name="animation-curve" type="s">
+      <default>'ease-out'</default>
+      <summary>Animation Curve</summary>
+      <description>Easing function for animations</description>
+      <choices>
+        <choice value='ease-out'/>
+        <choice value='ease-in'/>
+        <choice value='ease-in-out'/>
+        <choice value='linear'/>
+        <choice value='spring'/>
+      </choices>
+    </key>
+    
+    <key name="animation-window-open" type="b">
+      <default>true</default>
+      <summary>Window Open Animation</summary>
+      <description>Animate windows when they open</description>
+    </key>
+    
+    <key name="animation-attention" type="b">
+      <default>true</default>
+      <summary>Attention Animation</summary>
+      <description>Animate windows demanding attention</description>
+    </key>
+    
+    <!-- Gesture Settings -->
+    <key name="gesture-swipe-workspace" type="b">
+      <default>true</default>
+      <summary>Swipe Between Workspaces</summary>
+      <description>Use swipe gestures to switch workspaces</description>
+    </key>
+    
+    <!-- Keybinding Settings -->
+    <key name="move-window-left" type="s">
+      <default>'<Super>h'</default>
+      <summary>Move Window Left</summary>
+      <description>Keyboard shortcut to move window left</description>
+    </key>
+    
+    <key name="move-window-right" type="s">
+      <default>'<Super>l'</default>
+      <summary>Move Window Right</summary>
+      <description>Keyboard shortcut to move window right</description>
+    </key>
+    
+    <key name="move-window-up" type="s">
+      <default>'<Super>k'</default>
+      <summary>Move Window Up</summary>
+      <description>Keyboard shortcut to move window up</description>
+    </key>
+    
+    <key name="move-window-down" type="s">
+      <default>'<Super>j'</default>
+      <summary>Move Window Down</summary>
+      <description>Keyboard shortcut to move window down</description>
+    </key>
+    
+    <key name="focus-left" type="s">
+      <default>'<Super><Shift>h'</default>
+      <summary>Focus Window Left</summary>
+      <description>Keyboard shortcut to focus window on the left</description>
+    </key>
+    
+    <key name="focus-right" type="s">
+      <default>'<Super><Shift>l'</default>
+      <summary>Focus Window Right</summary>
+      <description>Keyboard shortcut to focus window on the right</description>
+    </key>
+    
+    <key name="focus-up" type="s">
+      <default>'<Super><Shift>k'</default>
+      <summary>Focus Window Up</summary>
+      <description>Keyboard shortcut to focus window above</description>
+    </key>
+    
+    <key name="focus-down" type="s">
+      <default>'<Super><Shift>j'</default>
+      <summary>Focus Window Down</summary>
+      <description>Keyboard shortcut to focus window below</description>
+    </key>
+    
+    <key name="toggle-tiling" type="s">
+      <default>'<Super>t'</default>
+      <summary>Toggle Tiling</summary>
+      <description>Keyboard shortcut to toggle tiling mode</description>
+    </key>
+    
+    <key name="toggle-float" type="s">
+      <default>'<Super>f'</default>
+      <summary>Toggle Float</summary>
+      <description>Keyboard shortcut to toggle floating mode</description>
+    </key>
+    
+    <!-- Window Rules -->
+    <key name="window-rules" type="s">
+      <default>''</default>
+      <summary>Window Rules</summary>
+      <description>Window-specific rules (format: action,pattern per line)</description>
+    </key>
+    
+  </schema>
+</schemalist>
+
